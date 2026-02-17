@@ -1,18 +1,18 @@
 const TelegramBot = require('node-telegram-bot-api');
 const express = require('express');
 
-// --- RENDER UCHUN SOXTA SERVER ---
+// --- RENDER UCHUN SERVER ---
 const app = express();
 app.get('/', (req, res) => {
-    res.send('Bot is running...');
+    res.send('Baxti bot is running...');
 });
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
 });
-// ---------------------------------
 
+// TOKEN Render Environment'dan olinadi
 const token = process.env.TOKEN;
 
 if (!token) {
@@ -26,12 +26,8 @@ const ADMIN_ID = 6685828485;
 
 let users = {};
 let userStep = {};
-let tempOrder = {};
-
-const services = ["🏠 Uy qurish", "☕️ Kafe qurish", "🏢 Bino qurish", "🏘 Kvartira ta'mi"];
 
 // --- WEB APP URL MANZILI ---
-// Baxti, shu yerga Render'dan olgan STATIC SITE manzilingizni qo'ying
 const WEB_APP_URL = 'https://my-telegram-webapp-lacp.onrender.com'; 
 
 bot.on('message', async (msg) => {
@@ -45,9 +41,11 @@ bot.on('message', async (msg) => {
         try {
             const data = JSON.parse(msg.web_app_data.data);
             
-            await bot.sendMessage(chatId, `✅ Baxti, buyurtma qabul qilindi!\n📦 Xizmat: ${data.item}\n💰 Narxi: ${data.price} so'm`);
+            // Foydalanuvchiga tasdiq
+            await bot.sendMessage(chatId, `✅ Baxti, buyurtma qabul qilindi!\n📦 Xizmat: ${data.item}\n💰 Narxi: ${data.price.toLocaleString()} so'm\n\nTez orada siz bilan bog'lanamiz!`);
             
-            const adminMsg = `🚀 WEB APP'DAN BUYURTMA!\n👤 Kimdan: ${msg.from.first_name}\n🛠 Xizmat: ${data.item}\n💵 Narxi: ${data.price} so'm`;
+            // Adminga (Sizga) bildirishnoma
+            const adminMsg = `🚀 WEB APP'DAN YANGI BUYURTMA!\n\n👤 Kimdan: ${msg.from.first_name}\n🛠 Xizmat: ${data.item}\n💵 Narxi: ${data.price.toLocaleString()} so'm`;
             await bot.sendMessage(ADMIN_ID, adminMsg);
             return; 
         } catch (e) {
@@ -55,22 +53,22 @@ bot.on('message', async (msg) => {
         }
     }
 
-    // START
+    // START VA ASOSIY MENYU
     if (text === '/start' || text === "🔙 Asosiy menyu") {
         userStep[chatId] = null;
         if (users[chatId] && users[chatId].registered) {
-            return showMainMenu(chatId, `Xush kelibsiz, ${users[chatId].name}! Nima quramiz?`);
+            return showMainMenu(chatId, `Xush kelibsiz, ${users[chatId].name}! Bizning xizmatlardan foydalanish uchun do'konni oching.`);
         } else {
             userStep[chatId] = 'reg_name';
-            return bot.sendMessage(chatId, "Assalomu alaykum!\nIsmingizni kiriting:");
+            return bot.sendMessage(chatId, "Assalomu alaykum!\nBotdan foydalanish uchun ismingizni kiriting:");
         }
     }
 
-    // ISM VA RO'YXATDAN O'TISH
+    // RO'YXATDAN O'TISH: ISM
     if (userStep[chatId] === 'reg_name') {
         users[chatId] = { name: text };
         userStep[chatId] = 'reg_phone';
-        return bot.sendMessage(chatId, "Telefon raqamingizni yuboring:", {
+        return bot.sendMessage(chatId, "Rahmat! Endi telefon raqamingizni yuboring:", {
             reply_markup: {
                 keyboard: [[{ text: "📞 Raqamni yuborish", request_contact: true }]],
                 resize_keyboard: true,
@@ -79,82 +77,41 @@ bot.on('message', async (msg) => {
         });
     }
 
+    // RO'YXATDAN O'TISH: TELEFON
     if (userStep[chatId] === 'reg_phone') {
         const phone = msg.contact ? msg.contact.phone_number : text;
         if (!users[chatId]) users[chatId] = {};
         users[chatId].phone = phone;
         users[chatId].registered = true;
         userStep[chatId] = null;
-        return showMainMenu(chatId, "Ro'yxatdan o'tdingiz!");
+        return showMainMenu(chatId, "Muvaffaqiyatli ro'yxatdan o'tdingiz!");
     }
 
-    // XIZMATLAR
-    if (services.includes(text)) {
-        if (!users[chatId] || !users[chatId].registered) {
-            return bot.sendMessage(chatId, "Avval /start bosing.");
-        }
-        tempOrder[chatId] = { service: text };
-        userStep[chatId] = 'send_location';
-        return bot.sendMessage(chatId, "Lokatsiyani yuboring:", {
-            reply_markup: {
-                keyboard: [
-                    [{ text: "📍 Lokatsiyani yuborish", request_location: true }],
-                    ["🔙 Asosiy menyu"]
-                ],
-                resize_keyboard: true
-            }
-        });
-    }
-
-    // LOKATSIYA VA TASDIQLASH
-    if (userStep[chatId] === 'send_location') {
-        if (msg.location) {
-            tempOrder[chatId].latitude = msg.location.latitude;
-            tempOrder[chatId].longitude = msg.location.longitude;
-            userStep[chatId] = 'confirm_order';
-            return bot.sendMessage(chatId, "Buyurtmani tasdiqlaysizmi?", {
-                reply_markup: {
-                    keyboard: [["✅ Yuborish", "❌ Bekor qilish"]],
-                    resize_keyboard: true
-                }
-            });
-        }
-    }
-
-    if (userStep[chatId] === 'confirm_order') {
-        if (text === "✅ Yuborish") {
-            const user = users[chatId];
-            const order = tempOrder[chatId];
-            const googleMapsUrl = `https://www.google.com/maps?q=${order.latitude},${order.longitude}`;
-            const adminText = `🚀 YANGI BUYURTMA\n\n👤 ${user.name}\n📞 ${user.phone}\n🏗 ${order.service}\n📍 [Joylashuv](${googleMapsUrl})`;
-            
-            await bot.sendMessage(ADMIN_ID, adminText, { parse_mode: 'Markdown' });
-            await bot.sendLocation(ADMIN_ID, order.latitude, order.longitude);
-            userStep[chatId] = null;
-            return showMainMenu(chatId, "Buyurtma yuborildi!");
-        }
-    }
-
+    // PROFIL MA'LUMOTLARI
     if (text === "👤 Profilim") {
         const u = users[chatId];
         if (!u) return bot.sendMessage(chatId, "Avval ro'yxatdan o'ting. /start");
-        return bot.sendMessage(chatId, `Siz: ${u.name}\nTel: ${u.phone}`);
+        return bot.sendMessage(chatId, `👤 Ismingiz: ${u.name}\n📞 Tel: ${u.phone}`);
     }
 });
 
+// ASOSIY MENYU FUNKSIYASI
 function showMainMenu(chatId, message) {
     bot.sendMessage(chatId, message, {
         reply_markup: {
             keyboard: [
-                [{ text: "🛍 Maxsus Menu (Web App)", web_app: { url: WEB_APP_URL } }],
-                ["🏠 Uy qurish", "☕️ Kafe qurish"],
-                ["🏢 Bino qurish", "🏘 Kvartira ta'mi"],
-                ["👤 Profilim"]
+                [{ text: "🛍 Do'konni ochish", web_app: { url: WEB_APP_URL } }],
+                ["👤 Profilim", "🔙 Asosiy menyu"]
             ],
             resize_keyboard: true
         }
     });
 }
 
-process.on('unhandledRejection', console.error);
-process.on('uncaughtException', console.error);
+// Xatoliklarni ushlash
+process.on('unhandledRejection', (reason, promise) => {
+    console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+});
+process.on('uncaughtException', (err) => {
+    console.error('Uncaught Exception:', err);
+});

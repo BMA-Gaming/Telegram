@@ -3,33 +3,52 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Web App</title>
+    <title>Baxti's Store</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        body { font-family: sans-serif; background: #f0f2f5; padding: 20px; text-align: center; }
-        .card { background: white; border-radius: 15px; padding: 15px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); margin-bottom: 20px; }
-        button { background: #0088cc; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; }
+        body { font-family: sans-serif; background: #f0f2f5; padding: 15px; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .card { background: white; border-radius: 12px; padding: 10px; text-align: center; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .card img { width: 100%; border-radius: 8px; }
+        h4 { margin: 10px 0 5px; font-size: 14px; }
+        p { color: #0088cc; font-weight: bold; margin: 0 0 10px; font-size: 13px; }
+        button { background: #0088cc; color: white; border: none; padding: 8px; width: 100%; border-radius: 6px; cursor: pointer; font-size: 12px; }
+        button:active { transform: scale(0.95); }
     </style>
 </head>
 <body>
-    <div class="card">
-        <h3>Qurilish Xizmati</h3>
-        <p>Narxi: 500,000 so'm</p>
-        <button id="buyBtn">Sotib olish</button>
+    <h3 style="text-align: center;">Bizning xizmatlar</h3>
+    <div class="grid">
+        <div class="card">
+            <h4>🏠 Uy qurish</h4>
+            <p>500 mln so'm</p>
+            <button onclick="buy('🏠 Uy qurish', 500000000)">Sotib olish</button>
+        </div>
+        <div class="card">
+            <h4>☕️ Kafe qurish</h4>
+            <p>300 mln so'm</p>
+            <button onclick="buy('☕️ Kafe qurish', 300000000)">Sotib olish</button>
+        </div>
+        <div class="card">
+            <h4>🏢 Bino qurish</h4>
+            <p>1 mlrd so'm</p>
+            <button onclick="buy('🏢 Bino qurish', 1000000000)">Sotib olish</button>
+        </div>
+        <div class="card)
+            <h4>🏘 Ta'mirlash</h4>
+            <p>50 mln so'm</p>
+            <button onclick="buy('🏘 Kvartira ta\'miri', 50000000)">Sotib olish</button>
+        </div>
     </div>
 
     <script>
         let tg = window.Telegram.WebApp;
-        tg.expand(); // Oynani to'liq ochish
+        tg.expand();
 
-        document.getElementById("buyBtn").addEventListener("click", function(){
-            let data = {
-                item: "Qurilish xizmati",
-                price: 500000
-            };
-            tg.sendData(JSON.stringify(data)); // Botga ma'lumot yuborish
-            tg.close(); // Oynani yopish
-        });
+        function buy(name, price) {
+            let data = { item: name, price: price };
+            tg.sendData(JSON.stringify(data)); 
+        }
     </script>
 </body>
 </html>
