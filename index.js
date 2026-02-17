@@ -1,5 +1,5 @@
 const TelegramBot = require('node-telegram-bot-api');
-const express = require('express'); // Express qo'shildi
+const express = require('express');
 
 // --- RENDER UCHUN SOXTA SERVER ---
 const app = express();
@@ -13,7 +13,6 @@ app.listen(PORT, () => {
 });
 // ---------------------------------
 
-// TOKEN Render Environment ga qo'yiladi
 const token = process.env.TOKEN;
 
 if (!token) {
@@ -23,7 +22,7 @@ if (!token) {
 
 const bot = new TelegramBot(token, { polling: true });
 
-const ADMIN_ID = 6685828485;
+const ADMIN_ID = 6685828485; // O'z ID raqamingizni tekshiring
 
 let users = {};
 let userStep = {};
@@ -32,16 +31,32 @@ let tempOrder = {};
 const services = ["🏠 Uy qurish", "☕️ Kafe qurish", "🏢 Bino qurish", "🏘 Kvartira ta'miri"];
 
 bot.on('message', async (msg) => {
-
     if (!msg.chat) return;
 
     const chatId = msg.chat.id;
     const text = msg.text || "";
 
+    // --- WEB APP MA'LUMOTLARINI QABUL QILISH ---
+    if (msg.web_app_data) {
+        try {
+            const data = JSON.parse(msg.web_app_data.data);
+            
+            // Foydalanuvchiga tasdiq xabari
+            await bot.sendMessage(chatId, `✅ Web App orqali buyurtmangiz olindi!\n📦 Xizmat: ${data.item}\n💰 Narxi: ${data.price} so'm`);
+            
+            // Adminga (Sizga) xabar yuborish
+            const adminMsg = `🚀 WEB APP'DAN BUYURTMA!\n👤 Kimdan: ${msg.from.first_name}\n🛠 Xizmat: ${data.item}\n💵 Narxi: ${data.price} so'm`;
+            await bot.sendMessage(ADMIN_ID, adminMsg);
+            
+            return; // Web App ma'lumoti kelganda boshqa if'larga kirmasligi uchun
+        } catch (e) {
+            console.error("Web App ma'lumotida xato:", e);
+        }
+    }
+
     // START
     if (text === '/start' || text === "🔙 Asosiy menyu") {
         userStep[chatId] = null;
-
         if (users[chatId] && users[chatId].registered) {
             return showMainMenu(chatId, `Xush kelibsiz, ${users[chatId].name}! Nima quramiz?`);
         } else {
@@ -50,11 +65,10 @@ bot.on('message', async (msg) => {
         }
     }
 
-    // ISM
+    // ISM VA RO'YXATDAN O'TISH (Sizning kodingiz davomi...)
     if (userStep[chatId] === 'reg_name') {
         users[chatId] = { name: text };
         userStep[chatId] = 'reg_phone';
-
         return bot.sendMessage(chatId, "Telefon raqamingizni yuboring:", {
             reply_markup: {
                 keyboard: [[{ text: "📞 Raqamni yuborish", request_contact: true }]],
@@ -64,31 +78,22 @@ bot.on('message', async (msg) => {
         });
     }
 
-    // TELEFON
     if (userStep[chatId] === 'reg_phone') {
-
         const phone = msg.contact ? msg.contact.phone_number : text;
-
         if (!users[chatId]) users[chatId] = {};
-
         users[chatId].phone = phone;
         users[chatId].registered = true;
-
         userStep[chatId] = null;
-
         return showMainMenu(chatId, "Ro'yxatdan o'tdingiz!");
     }
 
-    // XIZMAT TANLASH
+    // XIZMATLAR VA BOSHQALAR
     if (services.includes(text)) {
-
         if (!users[chatId] || !users[chatId].registered) {
             return bot.sendMessage(chatId, "Avval /start bosing.");
         }
-
         tempOrder[chatId] = { service: text };
         userStep[chatId] = 'send_location';
-
         return bot.sendMessage(chatId, "Lokatsiyani yuboring:", {
             reply_markup: {
                 keyboard: [
@@ -100,79 +105,40 @@ bot.on('message', async (msg) => {
         });
     }
 
-    // LOKATSIYA
+    // LOKATSIYA VA TASDIQLASH (Siz yozgan qismlar...)
     if (userStep[chatId] === 'send_location') {
-
         if (msg.location) {
-
             tempOrder[chatId].latitude = msg.location.latitude;
             tempOrder[chatId].longitude = msg.location.longitude;
-
             userStep[chatId] = 'confirm_order';
-
             return bot.sendMessage(chatId, "Buyurtmani tasdiqlaysizmi?", {
                 reply_markup: {
                     keyboard: [["✅ Yuborish", "❌ Bekor qilish"]],
                     resize_keyboard: true
                 }
             });
-
-        } else {
-            return bot.sendMessage(chatId, "Pastdagi tugma orqali lokatsiya yuboring.");
         }
     }
 
-    // TASDIQLASH
     if (userStep[chatId] === 'confirm_order') {
-
         if (text === "✅ Yuborish") {
-
             const user = users[chatId];
             const order = tempOrder[chatId];
-
-            if (!user || !order) {
-                userStep[chatId] = null;
-                return bot.sendMessage(chatId, "Xatolik yuz berdi. Qaytadan boshlang.");
-            }
-
             const googleMapsUrl = `https://www.google.com/maps?q=${order.latitude},${order.longitude}`;
-
-            const adminText =
-`🚀 YANGI BUYURTMA
-
-👤 ${user.name}
-📞 ${user.phone}
-🏗 ${order.service}
-📍 [Google Maps](${googleMapsUrl})`;
-
+            const adminText = `🚀 YANGI BUYURTMA\n\n👤 ${user.name}\n📞 ${user.phone}\n🏗 ${order.service}\n📍 [Joylashuv](${googleMapsUrl})`;
+            
             await bot.sendMessage(ADMIN_ID, adminText, { parse_mode: 'Markdown' });
             await bot.sendLocation(ADMIN_ID, order.latitude, order.longitude);
-
             userStep[chatId] = null;
-            tempOrder[chatId] = null;
-
             return showMainMenu(chatId, "Buyurtma yuborildi!");
         }
-
-        if (text === "❌ Bekor qilish") {
-            userStep[chatId] = null;
-            tempOrder[chatId] = null;
-            return showMainMenu(chatId, "Bekor qilindi.");
-        }
     }
 
-    // PROFIL
     if (text === "👤 Profilim") {
-
         const u = users[chatId];
-
-        if (!u) {
-            return bot.sendMessage(chatId, "Avval ro'yxatdan o'ting. /start");
-        }
-
+        if (!u) return bot.sendMessage(chatId, "Avval ro'yxatdan o'ting. /start");
         return bot.sendMessage(chatId, `Siz: ${u.name}\nTel: ${u.phone}`);
     }
-
 });
 
 function showMainMenu(chatId, message) {
@@ -180,7 +146,7 @@ function showMainMenu(chatId, message) {
         reply_markup: {
             keyboard: [
                 ["🏠 Uy qurish", "☕️ Kafe qurish"],
-                ["🏢 Bino qurish", "🏘 Kvartira ta'miri"],
+                ["🏢 Bino qurish", "🏘 Kvartira ta'mi"],
                 ["👤 Profilim"]
             ],
             resize_keyboard: true
@@ -188,6 +154,5 @@ function showMainMenu(chatId, message) {
     });
 }
 
-// Xatolik tushsa bot o'chib ketmasligi uchun
 process.on('unhandledRejection', console.error);
 process.on('uncaughtException', console.error);
