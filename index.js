@@ -22,13 +22,17 @@ if (!token) {
 
 const bot = new TelegramBot(token, { polling: true });
 
-const ADMIN_ID = 6685828485; // O'z ID raqamingizni tekshiring
+const ADMIN_ID = 6685828485; 
 
 let users = {};
 let userStep = {};
 let tempOrder = {};
 
-const services = ["🏠 Uy qurish", "☕️ Kafe qurish", "🏢 Bino qurish", "🏘 Kvartira ta'miri"];
+const services = ["🏠 Uy qurish", "☕️ Kafe qurish", "🏢 Bino qurish", "🏘 Kvartira ta'mi"];
+
+// --- WEB APP URL MANZILI ---
+// Baxti, shu yerga Render'dan olgan STATIC SITE manzilingizni qo'ying
+const WEB_APP_URL = 'https://my-telegram-webapp-lacp.onrender.com'; 
 
 bot.on('message', async (msg) => {
     if (!msg.chat) return;
@@ -41,16 +45,13 @@ bot.on('message', async (msg) => {
         try {
             const data = JSON.parse(msg.web_app_data.data);
             
-            // Foydalanuvchiga tasdiq xabari
-            await bot.sendMessage(chatId, `✅ Web App orqali buyurtmangiz olindi!\n📦 Xizmat: ${data.item}\n💰 Narxi: ${data.price} so'm`);
+            await bot.sendMessage(chatId, `✅ Baxti, buyurtma qabul qilindi!\n📦 Xizmat: ${data.item}\n💰 Narxi: ${data.price} so'm`);
             
-            // Adminga (Sizga) xabar yuborish
             const adminMsg = `🚀 WEB APP'DAN BUYURTMA!\n👤 Kimdan: ${msg.from.first_name}\n🛠 Xizmat: ${data.item}\n💵 Narxi: ${data.price} so'm`;
             await bot.sendMessage(ADMIN_ID, adminMsg);
-            
-            return; // Web App ma'lumoti kelganda boshqa if'larga kirmasligi uchun
+            return; 
         } catch (e) {
-            console.error("Web App ma'lumotida xato:", e);
+            console.error("Web App xatosi:", e);
         }
     }
 
@@ -65,7 +66,7 @@ bot.on('message', async (msg) => {
         }
     }
 
-    // ISM VA RO'YXATDAN O'TISH (Sizning kodingiz davomi...)
+    // ISM VA RO'YXATDAN O'TISH
     if (userStep[chatId] === 'reg_name') {
         users[chatId] = { name: text };
         userStep[chatId] = 'reg_phone';
@@ -87,7 +88,7 @@ bot.on('message', async (msg) => {
         return showMainMenu(chatId, "Ro'yxatdan o'tdingiz!");
     }
 
-    // XIZMATLAR VA BOSHQALAR
+    // XIZMATLAR
     if (services.includes(text)) {
         if (!users[chatId] || !users[chatId].registered) {
             return bot.sendMessage(chatId, "Avval /start bosing.");
@@ -105,7 +106,7 @@ bot.on('message', async (msg) => {
         });
     }
 
-    // LOKATSIYA VA TASDIQLASH (Siz yozgan qismlar...)
+    // LOKATSIYA VA TASDIQLASH
     if (userStep[chatId] === 'send_location') {
         if (msg.location) {
             tempOrder[chatId].latitude = msg.location.latitude;
@@ -145,6 +146,7 @@ function showMainMenu(chatId, message) {
     bot.sendMessage(chatId, message, {
         reply_markup: {
             keyboard: [
+                [{ text: "🛍 Maxsus Menu (Web App)", web_app: { url: WEB_APP_URL } }],
                 ["🏠 Uy qurish", "☕️ Kafe qurish"],
                 ["🏢 Bino qurish", "🏘 Kvartira ta'mi"],
                 ["👤 Profilim"]
