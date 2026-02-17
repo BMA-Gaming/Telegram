@@ -10,7 +10,7 @@ app.listen(PORT, () => console.log(`Server is running on port ${PORT}`));
 const token = process.env.TOKEN;
 const PAYMENT_TOKEN = '398062629:TEST:999999999_F91D8F69C042267444B74CC0B3C747757EB0E065'; // BotFather'dan olgan token
 const ADMIN_ID = 6685828485; 
-const WEB_APP_URL = 'srv-d6a6n0oboq4c73dsc270'; 
+const WEB_APP_URL = 'https://my-telegram-webapp-lacp.onrender.com'; 
 
 if (!token) {
     console.error("TOKEN topilmadi!");
