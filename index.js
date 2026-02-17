@@ -8,85 +8,73 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Server is running on port ${PORT}`));
 
 const token = process.env.TOKEN;
-const PAYMENT_TOKEN = '398062629:TEST:999999999_F91D8F69C042267444B74CC0B3C747757EB0E065'; 
-const ADMIN_ID = 6685828485; 
-const WEB_APP_URL = 'https://my-telegram-webapp-lacp.onrender.com'; 
-
-if (!token) {
-    console.error("TOKEN topilmadi!");
-    process.exit(1);
-}
+const PAYMENT_TOKEN = '398062629:TEST:999999999_F91D8F69C042267444B74CC0B3C747757EB0E065'; //
+const ADMIN_ID = 6685828485; //
+const WEB_APP_URL = 'https://my-telegram-webapp-lacp.onrender.com'; //
 
 const bot = new TelegramBot(token, { polling: true });
 
-// --- SODDA BAZA (Xatosiz o'qish) ---
+// --- BAZA ---
 let users = {};
 try {
     if (fs.existsSync('users.json')) {
         users = JSON.parse(fs.readFileSync('users.json'));
     }
-} catch (e) {
-    console.log("Baza o'qishda xato, yangi baza yaratiladi.");
-}
+} catch (e) { console.log("Baza yangi"); }
 
 function saveDatabase() {
-    try {
-        fs.writeFileSync('users.json', JSON.stringify(users, null, 2));
-    } catch (e) {
-        console.error("Faylga yozishda xato:", e.message);
-    }
+    fs.writeFileSync('users.json', JSON.stringify(users, null, 2));
 }
 
 bot.on('message', async (msg) => {
     const chatId = msg.chat.id;
     const text = msg.text || "";
 
+    // WEB APP DATA (TO'LOV)
     if (msg.web_app_data) {
         try {
             const data = JSON.parse(msg.web_app_data.data);
-            
-            // Narxni tekshirish (Telegram limiti uchun)
-            // Agar HTML dan juda katta son kelsa, uni 1000 so'm qilib tursin
-            let finalPrice = parseInt(data.price) > 10000000 ? 1000 : parseInt(data.price);
-
-            await bot.sendMessage(chatId, `Tayyor! ${data.item} uchun chek tayyorlanmoqda...`);
+            let finalPrice = parseInt(data.price); //
 
             await bot.sendInvoice(
                 chatId,
                 data.item,
-                `Xizmat: ${data.item}`,
+                `Baxti Construction: ${data.item}`,
                 `order_${Date.now()}`,
                 PAYMENT_TOKEN,
                 'UZS',
-                [{ label: 'To\'lov miqdori', amount: finalPrice * 100 }], // Tiyinda
+                [{ label: 'To\'lov', amount: finalPrice * 100 }], //
                 { photo_url: 'https://cdn-icons-png.flaticon.com/512/4342/4342728.png' }
             );
-        } catch (e) {
-            console.error("To'lov yuborishda xato:", e.message);
-            bot.sendMessage(chatId, "To'lov tizimida xatolik yuz berdi. Narx juda kattami?");
-        }
+        } catch (e) { console.log("Error invoice"); }
     }
 
+    // COMMANDS
     if (text === '/start') {
         if (users[chatId] && users[chatId].registered) {
             return showMainMenu(chatId, `Xush kelibsiz, ${users[chatId].name}!`);
-        } else {
-            users[chatId] = { step: 'reg_name' };
-            return bot.sendMessage(chatId, "Ismingizni kiriting:");
         }
+        users[chatId] = { step: 'name', history: [] };
+        return bot.sendMessage(chatId, "Ismingizni kiriting:");
     }
 
-    // REGISTRATSIYA VA PROFIL (Kodingizning qolgan qismi bir xil...)
-    if (users[chatId] && users[chatId].step === 'reg_name') {
+    // ADMIN PANEL
+    if (text === '/admin' && chatId === ADMIN_ID) {
+        const count = Object.keys(users).length;
+        return bot.sendMessage(chatId, `📊 **Statistika**\n\nJami mijozlar: ${count} ta`);
+    }
+
+    // REGISTRATSIYA
+    if (users[chatId]?.step === 'name') {
         users[chatId].name = text;
-        users[chatId].step = 'reg_phone';
+        users[chatId].step = 'phone';
         saveDatabase();
-        return bot.sendMessage(chatId, "Raqamni yuboring:", {
-            reply_markup: { keyboard: [[{ text: "📞 Raqam", request_contact: true }]], resize_keyboard: true, one_time_keyboard: true }
+        return bot.sendMessage(chatId, "📞 Raqamingizni yuboring:", {
+            reply_markup: { keyboard: [[{ text: "📞 Raqamni ulash", request_contact: true }]], resize_keyboard: true, one_time_keyboard: true }
         });
     }
 
-    if (users[chatId] && users[chatId].step === 'reg_phone') {
+    if (users[chatId]?.step === 'phone' && (msg.contact || text)) {
         users[chatId].phone = msg.contact ? msg.contact.phone_number : text;
         users[chatId].registered = true;
         users[chatId].step = null;
@@ -94,28 +82,31 @@ bot.on('message', async (msg) => {
         return showMainMenu(chatId, "Ro'yxatdan o'tdingiz!");
     }
 
-    if (text === "👤 Profilim") {
-        const u = users[chatId] || {};
-        return bot.sendMessage(chatId, `👤: ${u.name || 'Noma\'lum'}\n📞: ${u.phone || 'Yo\'q'}`);
+    if (text === "👤 Profil") {
+        const u = users[chatId];
+        let historyText = u.history?.length ? u.history.join("\n") : "Hali xaridlar yo'q";
+        return bot.sendMessage(chatId, `👤 **Profil**\n\nIsm: ${u.name}\nTel: ${u.phone}\n\n📜 **Xaridlar:**\n${historyText}`);
     }
 });
 
-bot.on('pre_checkout_query', (query) => {
-    bot.answerPreCheckoutQuery(query.id, true);
-});
+bot.on('pre_checkout_query', (q) => bot.answerPreCheckoutQuery(q.id, true));
 
 bot.on('successful_payment', async (msg) => {
-    await bot.sendMessage(msg.chat.id, "🎉 To'lov muvaffaqiyatli amalga oshirildi!");
-    await bot.sendMessage(ADMIN_ID, `💰 PUL TUSHDI!\n👤 Foydalanuvchi: ${msg.chat.id}`);
+    const chatId = msg.chat.id;
+    const item = msg.successful_payment.invoice_payload;
+    
+    if (!users[chatId].history) users[chatId].history = [];
+    users[chatId].history.push(`✅ ${new Date().toLocaleDateString()}: To'lov qilindi`);
+    saveDatabase();
+
+    await bot.sendMessage(chatId, "🎉 Tabriklaymiz! To'lov muvaffaqiyatli o'tdi.");
+    await bot.sendMessage(ADMIN_ID, `💰 **PUL TUSHDI!**\n👤: ${users[chatId].name}\n📞: ${users[chatId].phone}`);
 });
 
-// Xatolar botni o'chirib qo'ymasligi uchun:
-bot.on("polling_error", (err) => console.log("Polling error:", err.code, err.message));
-
-function showMainMenu(chatId, message) {
-    bot.sendMessage(chatId, message, {
+function showMainMenu(chatId, msg) {
+    bot.sendMessage(chatId, msg, {
         reply_markup: {
-            keyboard: [[{ text: "🛍 Do'konni ochish", web_app: { url: WEB_APP_URL } }], ["👤 Profilim"]],
+            keyboard: [[{ text: "🛍 Do'konni ochish", web_app: { url: WEB_APP_URL } }], ["👤 Profil"]],
             resize_keyboard: true
         }
     });
