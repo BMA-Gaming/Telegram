@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Web App</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        body { font-family: sans-serif; background: #f0f2f5; padding: 20px; text-align: center; }
+        .card { background: white; border-radius: 15px; padding: 15px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        button { background: #0088cc; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h3>Qurilish Xizmati</h3>
+        <p>Narxi: 500,000 so'm</p>
+        <button id="buyBtn">Sotib olish</button>
+    </div>
+
+    <script>
+        let tg = window.Telegram.WebApp;
+        tg.expand(); // Oynani to'liq ochish
+
+        document.getElementById("buyBtn").addEventListener("click", function(){
+            let data = {
+                item: "Qurilish xizmati",
+                price: 500000
+            };
+            tg.sendData(JSON.stringify(data)); // Botga ma'lumot yuborish
+            tg.close(); // Oynani yopish
+        });
+    </script>
+</body>
+</html>
