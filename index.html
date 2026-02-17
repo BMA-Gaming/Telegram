@@ -1,32 +1,58 @@
-<div class="grid">
-    <div class="card">
-        <img src="https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=300" alt="Uy">
-        <div class="card-content">
-            <h4>Uy qurish</h4>
-            <button onclick="order('🏠 Uy qurish')">Buyurtma berish</button>
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Baxti Construction</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        body { font-family: sans-serif; background-color: #f4f7f9; margin: 0; padding: 15px; }
+        h2 { text-align: center; color: #2c3e50; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .card { background: white; border-radius: 15px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.1); text-align: center; }
+        .card img { width: 100%; height: 100px; object-fit: cover; }
+        .card-content { padding: 10px; }
+        button { background: #3498db; color: white; border: none; padding: 10px; width: 100%; font-weight: bold; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h2>🏗 Qurilish Xizmatlari</h2>
+    <div class="grid">
+        <div class="card">
+            <img src="https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=300">
+            <div class="card-content">
+                <h4>Uy qurish</h4>
+                <button onclick="order('🏠 Uy qurish')">Buyurtma berish</button>
+            </div>
+        </div>
+        <div class="card">
+            <img src="https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=300">
+            <div class="card-content">
+                <h4>Kafe qurish</h4>
+                <button onclick="order('☕ Kafe qurish')">Buyurtma berish</button>
+            </div>
+        </div>
+        <div class="card">
+            <img src="https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=300">
+            <div class="card-content">
+                <h4>Bino qurish</h4>
+                <button onclick="order('🏢 Bino qurish')">Buyurtma berish</button>
+            </div>
+        </div>
+        <div class="card">
+            <img src="https://images.unsplash.com/photo-1581094794329-c8112a89af12?w=300">
+            <div class="card-content">
+                <h4>Tamirlash</h4>
+                <button onclick="order('🛠 Tamirlash xizmati')">Buyurtma berish</button>
+            </div>
         </div>
     </div>
-    <div class="card">
-        <img src="https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=300" alt="Kafe">
-        <div class="card-content">
-            <h4>Kafe qurish</h4>
-            <button onclick="order('☕ Kafe qurish')">Buyurtma berish</button>
-        </div>
-    </div>
-    <div class="card">
-        <img src="https://images.unsplash.com/photo-1581094794329-c8112a89af12?w=300" alt="Tamirlash">
-        <div class="card-content">
-            <h4>Tamirlash xizmati</h4>
-            <button onclick="order('🛠 Tamirlash xizmati')">Buyurtma berish</button>
-        </div>
-    </div>
-</div>
-
-<script>
-    let tg = window.Telegram.WebApp;
-    tg.expand();
-
-    function order(item) {
-        tg.sendData(JSON.stringify({ item: item })); // Faqat xizmat nomini yuboramiz
-    }
-</script>
+    <script>
+        let tg = window.Telegram.WebApp;
+        tg.expand();
+        function order(item) {
+            tg.sendData(JSON.stringify({ item: item }));
+        }
+    </script>
+</body>
+</html>
