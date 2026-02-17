@@ -1,4 +1,17 @@
 const TelegramBot = require('node-telegram-bot-api');
+const express = require('express'); // Express qo'shildi
+
+// --- RENDER UCHUN SOXTA SERVER ---
+const app = express();
+app.get('/', (req, res) => {
+    res.send('Bot is running...');
+});
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}`);
+});
+// ---------------------------------
 
 // TOKEN Render Environment ga qo'yiladi
 const token = process.env.TOKEN;
@@ -130,9 +143,9 @@ bot.on('message', async (msg) => {
 👤 ${user.name}
 📞 ${user.phone}
 🏗 ${order.service}
-📍 ${googleMapsUrl}`;
+📍 [Google Maps](${googleMapsUrl})`;
 
-            await bot.sendMessage(ADMIN_ID, adminText);
+            await bot.sendMessage(ADMIN_ID, adminText, { parse_mode: 'Markdown' });
             await bot.sendLocation(ADMIN_ID, order.latitude, order.longitude);
 
             userStep[chatId] = null;
