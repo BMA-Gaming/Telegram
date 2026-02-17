@@ -1,53 +1,107 @@
 <!DOCTYPE html>
-<html>
+<html lang="uz">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Baxti's Store</title>
+    <title>Baxti Construction Store</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        body { font-family: sans-serif; background: #f0f2f5; padding: 15px; }
-        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .card { background: white; border-radius: 12px; padding: 10px; text-align: center; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        .card img { width: 100%; border-radius: 8px; }
-        h4 { margin: 10px 0 5px; font-size: 14px; }
-        p { color: #0088cc; font-weight: bold; margin: 0 0 10px; font-size: 13px; }
-        button { background: #0088cc; color: white; border: none; padding: 8px; width: 100%; border-radius: 6px; cursor: pointer; font-size: 12px; }
-        button:active { transform: scale(0.95); }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f7f9;
+            margin: 0;
+            padding: 15px;
+            color: #333;
+        }
+        h2 { text-align: center; color: #2c3e50; margin-bottom: 20px; }
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        .card {
+            background: white;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            transition: transform 0.2s;
+            display: flex;
+            flex-direction: column;
+        }
+        .card:active { transform: scale(0.95); }
+        .card img {
+            width: 100%;
+            height: 100px;
+            object-fit: cover;
+        }
+        .card-content { padding: 10px; text-align: center; flex-grow: 1; }
+        .card h4 { margin: 5px 0; font-size: 14px; }
+        .card p { color: #27ae60; font-weight: bold; font-size: 13px; margin: 5px 0; }
+        button {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+            border: none;
+            padding: 8px;
+            width: 100%;
+            cursor: pointer;
+            font-weight: bold;
+            transition: 0.3s;
+        }
+        button:hover { background: #2ecc71; }
     </style>
 </head>
 <body>
-    <h3 style="text-align: center;">Bizning xizmatlar</h3>
+
+    <h2>🏗 Qurilish Xizmatlari</h2>
+
     <div class="grid">
         <div class="card">
-            <h4>🏠 Uy qurish</h4>
-            <p>500 mln so'm</p>
-            <button onclick="buy('🏠 Uy qurish', 50000)">Sotib olish</button>
+            <img src="https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=300" alt="Uy">
+            <div class="card-content">
+                <h4>Uy qurish</h4>
+                <p>50 000 UZS</p>
+                <button onclick="buy('🏠 Uy qurish', 50000)">Sotib olish</button>
+            </div>
         </div>
+
         <div class="card">
-            <h4>☕️ Kafe qurish</h4>
-            <p>300 mln so'm</p>
-            <button onclick="buy('☕️ Kafe qurish', 30000)">Sotib olish</button>
+            <img src="https://images.unsplash.com/photo-1554118811-1e0d58224f24?auto=format&fit=crop&w=300" alt="Kafe">
+            <div class="card-content">
+                <h4>Kafe qurish</h4>
+                <p>30 000 UZS</p>
+                <button onclick="buy('☕ Kafe qurish', 30000)">Sotib olish</button>
+            </div>
         </div>
+
         <div class="card">
-            <h4>🏢 Bino qurish</h4>
-            <p>1 mlrd so'm</p>
-            <button onclick="buy('🏢 Bino qurish', 100000)">Sotib olish</button>
+            <img src="https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=300" alt="Bino">
+            <div class="card-content">
+                <h4>Bino qurish</h4>
+                <p>100 000 UZS</p>
+                <button onclick="buy('🏢 Bino qurish', 100000)">Sotib olish</button>
+            </div>
         </div>
-        <div class="card")
-            <h4>🏘 Ta'mirlash</h4>
-            <p>50 mln so'm</p>
-            <button onclick="buy('🏘 Kvartira tamiri', 50000)">Sotib olish</button>
+
+        <div class="card">
+            <img src="https://images.unsplash.com/photo-1581094794329-c8112a89af12?auto=format&fit=crop&w=300" alt="Tamirlash">
+            <div class="card-content">
+                <h4>Tamirlash</h4>
+                <p>500 000 UZS</p>
+                <button onclick="buy('🛠 Tamirlash xizmati', 500000)">Sotib olish</button>
+            </div>
         </div>
     </div>
 
     <script>
         let tg = window.Telegram.WebApp;
-        tg.expand();
+        tg.expand(); // Web Appni to'liq ekranga ochish
 
-        function buy(name, price) {
-            let data = { item: name, price: price };
-            tg.sendData(JSON.stringify(data)); 
+        function buy(item, price) {
+            let data = {
+                item: item,
+                price: price
+            };
+            tg.sendData(JSON.stringify(data));
         }
     </script>
 </body>
