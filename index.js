@@ -8,9 +8,11 @@ app.get('/', (req, res) => res.send('BMA Premium Bot ishlamoqda... ⚡️'));
 app.listen(PORT, () => console.log(`Server running on port: ${PORT}`));
 
 // --- ASOSIY SOZLAMALAR ---
-const token = process.env.TOKEN; // Render/Railway'da muhit o'zgaruvchisiga TOKEN qo'shing
+const token = process.env.TOKEN; 
 const ADMIN_ID = 6685828485; 
-const WEB_APP_URL = "https://github.com/BMA-Gaming/my-donat-shop.git/"; 
+
+// 🛑 MANA BU YERNI O'ZGARTIRDIK: .git emas, .io bo'lishi shart!
+const WEB_APP_URL = "https://bma-gaming.github.io/my-donat-shop/"; 
 
 const bot = new TelegramBot(token, { polling: true });
 
@@ -23,7 +25,6 @@ if (fs.existsSync('users.json')) {
     }
 }
 
-// Ma'lumotlarni saqlash funksiyasi
 const saveUsers = () => fs.writeFileSync('users.json', JSON.stringify(users, null, 2));
 
 bot.on('message', async (msg) => {
@@ -32,7 +33,6 @@ bot.on('message', async (msg) => {
 
     if (!users[chatId]) users[chatId] = { step: null, name: '', phone: '' };
 
-    // 1. Web App'dan ma'lumot kelganda
     if (msg.web_app_data) {
         try {
             const data = JSON.parse(msg.web_app_data.data);
@@ -50,7 +50,6 @@ bot.on('message', async (msg) => {
         }
     }
 
-    // 2. ID yoki Raqamni qabul qilish
     if (users[chatId].step === 'ask_details' && text !== '/start') {
         const userDetail = text;
         const detailLabel = users[chatId].category === 'game' ? "🆔 O'yin ID" : "📞 Tel raqam";
@@ -73,13 +72,11 @@ bot.on('message', async (msg) => {
         });
     }
 
-    // 3. Start komandasi
     if (text === '/start') {
         users[chatId].step = 'name';
         return bot.sendMessage(chatId, "Assalomu alaykum! BMA Premium do'koniga xush kelibsiz. Davom etish uchun ismingizni kiriting:");
     }
 
-    // 4. Ro'yxatdan o'tish (Ism)
     if (users[chatId].step === 'name') {
         users[chatId].name = text;
         users[chatId].step = 'phone';
@@ -92,7 +89,6 @@ bot.on('message', async (msg) => {
         });
     }
 
-    // 5. Ro'yxatdan o'tish (Telefon)
     if (msg.contact && users[chatId].step === 'phone') {
         users[chatId].phone = msg.contact.phone_number;
         users[chatId].step = null;
@@ -100,7 +96,8 @@ bot.on('message', async (msg) => {
         
         return bot.sendMessage(chatId, "Muvaffaqiyatli ro'yxatdan o'tdingiz! 🏁", {
             reply_markup: {
-                keyboard: [[{ text: "🛍 Do'konni ochish", web_app: { url: "https://github.com/BMA-Gaming/my-donat-shop.git/" } }]],
+                // 🛑 BU YERDA HAM TO'G'RI LINK BO'LISHI KERAK
+                keyboard: [[{ text: "🛍 Do'konni ochish", web_app: { url: WEB_APP_URL } }]],
                 resize_keyboard: true
             }
         });
