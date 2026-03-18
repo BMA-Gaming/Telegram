@@ -10,7 +10,7 @@ app.listen(PORT, () => console.log(`Server running on port: ${PORT}`));
 // --- ASOSIY SOZLAMALAR ---
 const token = process.env.TOKEN; // Render/Railway'da muhit o'zgaruvchisiga TOKEN qo'shing
 const ADMIN_ID = 6685828485; 
-const WEB_APP_URL = 'https://bma-gaming.github.io/my-donat-shop/'; 
+const WEB_APP_URL = "https://github.com/BMA-Gaming/my-donat-shop.git"; 
 
 const bot = new TelegramBot(token, { polling: true });
 
@@ -100,7 +100,7 @@ bot.on('message', async (msg) => {
         
         return bot.sendMessage(chatId, "Muvaffaqiyatli ro'yxatdan o'tdingiz! 🏁", {
             reply_markup: {
-                keyboard: [[{ text: "🛍 Do'konni ochish", web_app: { url: 'https://bma-gaming.github.io/my-donat-shop/' } }]],
+                keyboard: [[{ text: "🛍 Do'konni ochish", web_app: { url: "https://github.com/BMA-Gaming/my-donat-shop.git" } }]],
                 resize_keyboard: true
             }
         });
