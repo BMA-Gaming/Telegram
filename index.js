@@ -4,30 +4,36 @@ const fs = require('fs');
 const cors = require('cors');
 
 const app = express();
-app.use(cors()); // Frontend bilan cheklovsiz bog'lanish uchun
+app.use(cors());
 app.use(express.json());
 
 const PORT = process.env.PORT || 3000;
-const token = process.env.TOKEN; 
-const ADMIN_ID = 6685828485; // Sening Telegram ID raqaming
-const PAYMENT_TOKEN = process.env.PROVIDER_TOKEN; // Render Envs bo'limidan olinadi
+
+// Istalgan ko'rinmas bo'shliqlarni yo'qotish uchun .trim() qo'shdik
+const token = process.env.TOKEN ? process.env.TOKEN.trim() : null;
+const PAYMENT_TOKEN = process.env.PROVIDER_TOKEN ? process.env.PROVIDER_TOKEN.trim() : null;
+const ADMIN_ID = 6685828485; 
+
+if (!token) {
+    console.error("❌ DIQQAT: Asosiy TOKEN topilmadi yoki xato!");
+}
+if (!PAYMENT_TOKEN) {
+    console.error("❌ DIQQAT: PROVIDER_TOKEN topilmadi yoki xato!");
+}
 
 const bot = new TelegramBot(token, { polling: true });
 
 let users = {};
 const DB_FILE = 'users.json';
 
-// Ma'lumotlarni yuklash (users.json)
 if (fs.existsSync(DB_FILE)) {
     try { 
         users = JSON.parse(fs.readFileSync(DB_FILE)); 
     } catch (e) { 
-        console.log("DB o'qishda xato, yangi yaratiladi.");
         users = {}; 
     }
 }
 
-// Ma'lumotlarni saqlash
 const saveUsers = () => {
     try {
         fs.writeFileSync(DB_FILE, JSON.stringify(users, null, 2));
@@ -36,7 +42,6 @@ const saveUsers = () => {
     }
 };
 
-// Frontend (Web App) balansni tekshirishi uchun API
 app.get('/get-balance/:id', (req, res) => {
     const userId = req.params.id;
     if (!users[userId]) {
@@ -46,46 +51,40 @@ app.get('/get-balance/:id', (req, res) => {
     res.json(users[userId]);
 });
 
-app.get('/', (req, res) => res.send('BMA Bot va API xizmati muvaffaqiyatli ishlamoqda...'));
+app.get('/', (req, res) => res.send('BMA Bot faol...'));
+app.listen(PORT, () => console.log(`Server ${PORT} portda faol`));
 
-app.listen(PORT, () => console.log(`Server ${PORT}-portda faol`));
-
-// =======================================================
-// TELEGRAM RASMIY TO'LOV TIZIMI (NATIVE PAYMENTS)
-// =======================================================
-
-// Foydalanuvchi bot ichida rasmiy CLICK to'lovini tekshirishi uchun
+// CLICK TO'LOV BUYRUG'I
 bot.onText(/\/pay/, (msg) => {
     const chatId = msg.chat.id;
     
     if (!PAYMENT_TOKEN) {
-        return bot.sendMessage(chatId, "❌ Xatolik: Serverda PROVIDER_TOKEN (To'lov tokeni) sozlanmagan!");
+        return bot.sendMessage(chatId, `❌ Xatolik: Serverda PROVIDER_TOKEN sozlanmagan!\n\nHozirgi qiymat: ${PAYMENT_TOKEN}`);
     }
 
     bot.sendInvoice(
         chatId,
-        "BMA-Gaming Balans (Test)", 
+        "BMA-Gaming Balans", 
         "BMA-Gaming tizimi orqali hisobingizni 10,000 so'mga to'ldirish", 
-        `topup_auto_${chatId}_${Date.now()}`, // Unikal Invoice ID
+        `topup_auto_${chatId}_${Date.now()}`,
         PAYMENT_TOKEN,
         "UZS", 
-        [{ label: "Balansni to'ldirish", amount: 1000000 }] // Tiyinlarda (10000 * 100)
-    ).catch(err => console.error("Invoice yuborishda xato:", err));
+        [{ label: "Balansni to'ldirish", amount: 1000000 }]
+    ).catch(err => {
+        console.error("Invoice yuborishda xato:", err);
+        bot.sendMessage(chatId, `❌ Telegram to'lov tizimida xato: ${err.message}`);
+    });
 });
 
-// To'lov tugmasi bosilganda xavfsizlik tekshiruvi
 bot.on('pre_checkout_query', (query) => {
-    bot.answerPreCheckoutQuery(query.id, true)
-        .catch(err => console.error("Pre-checkout xatosi:", err));
+    bot.answerPreCheckoutQuery(query.id, true).catch(err => console.error(err));
 });
 
-// To'lov muvaffaqiyatli yakunlanganda balansni avtomatik oshirish
 bot.on('successful_payment', (msg) => {
     const chatId = msg.chat.id;
-    const amountPaid = msg.successful_payment.total_amount / 100; // Tiyindan so'mga o'tkazamiz
+    const amountPaid = msg.successful_payment.total_amount / 100;
 
     if (!users[chatId]) users[chatId] = { balance: 0, history: [] };
-    
     users[chatId].balance = (Number(users[chatId].balance) || 0) + amountPaid;
     
     users[chatId].history.push({
@@ -95,16 +94,9 @@ bot.on('successful_payment', (msg) => {
     });
     
     saveUsers();
-
-    bot.sendMessage(chatId, `✅ To'lovingiz muvaffaqiyatli qabul qilindi!\n💰 Yangi balans: ${users[chatId].balance.toLocaleString()} UZS`);
-    
-    // Adminga bildirishnoma
+    bot.sendMessage(chatId, `✅ To'lovingiz qabul qilindi!\n💰 Balans: ${users[chatId].balance.toLocaleString()} UZS`);
     bot.sendMessage(ADMIN_ID, `⚡️ AVTOMATIK TO'LOV\n👤: ${msg.from.first_name}\nID: ${chatId}\n💵: ${amountPaid.toLocaleString()} UZS`);
 });
-
-// =======================================================
-// INTERFEYS VA QO'LDA TO'LOV MANTIQLARI
-// =======================================================
 
 bot.on('message', async (msg) => {
     const chatId = msg.chat.id;
@@ -117,7 +109,6 @@ bot.on('message', async (msg) => {
         saveUsers();
     }
 
-    // Web App'dan kelgan ma'lumot (Qo'lda karta orqali to'lov so'rovi)
     if (msg.web_app_data) {
         try {
             const data = JSON.parse(msg.web_app_data.data);
@@ -128,16 +119,14 @@ bot.on('message', async (msg) => {
                         { text: "❌ Rad etish", callback_data: `rej_${chatId}` }
                     ]]
                 };
-                await bot.sendMessage(ADMIN_ID, `💰 QO'LDA TO'LOV SO'ROVI\n👤: ${firstName}\nID: ${chatId}\n💵: ${Number(data.amount).toLocaleString()} UZS`, { reply_markup: adminKeyboard });
+                await bot.sendMessage(ADMIN_ID, `💰 QO'LDA TO'LOV\n👤: ${firstName}\nID: ${chatId}\n💵: ${Number(data.amount).toLocaleString()} UZS`, { reply_markup: adminKeyboard });
                 bot.sendMessage(chatId, "⏳ To'lov so'rovi yuborildi. Admin tasdiqlashini kuting.");
             }
-        } catch (e) { 
-            console.error("Web App ma'lumotlarida xato:", e); 
-        }
+        } catch (e) { console.error(e); }
     }
 
     if (msg.text === '/start') {
-        bot.sendMessage(chatId, `Salom ${firstName}! BMA Premium Shop do'konimizga xush kelibsiz.\n\n🛒 Do'konni ochish uchun pastdagi tugmani bosing.\n💳 Bot orqali avtomatik to'lov qilish uchun /pay buyrug'ini yuboring.`, {
+        bot.sendMessage(chatId, `Salom ${firstName}! BMA Premium Shop do'konimizga xush kelibsiz.`, {
             reply_markup: {
                 keyboard: [[{ text: "🛍 Do'kon", web_app: { url: "https://bma-gaming.github.io/my-donat-shop/" } }]],
                 resize_keyboard: true
@@ -146,16 +135,13 @@ bot.on('message', async (msg) => {
     }
 });
 
-// Admin callback query tugmalari (Qo'lda to'lovlarni boshqarish)
 bot.on('callback_query', async (query) => {
     const data = query.data;
     const adminMsg = query.message;
 
     if (data.startsWith('app_')) {
         const [_, targetId, amount] = data.split('_');
-        
         if (!users[targetId]) users[targetId] = { balance: 0, history: [] };
-        
         users[targetId].balance = (Number(users[targetId].balance) || 0) + Number(amount);
         
         users[targetId].history.push({
@@ -165,16 +151,14 @@ bot.on('callback_query', async (query) => {
         });
         
         saveUsers();
-
-        bot.sendMessage(targetId, `✅ To'lovingiz admin tomonidan tasdiqlandi!\n💰 Yangi balans: ${users[targetId].balance.toLocaleString()} UZS`);
+        bot.sendMessage(targetId, `✅ To'lovingiz tasdiqlandi!\n💰 Balans: ${users[targetId].balance.toLocaleString()} UZS`);
         bot.editMessageText(adminMsg.text + "\n\n✅ ADMIN TOMONIDAN TASDIQLANDI", { chat_id: ADMIN_ID, message_id: adminMsg.message_id });
     }
 
     if (data.startsWith('rej_')) {
         const targetId = data.split('_')[1];
-        bot.sendMessage(targetId, `❌ Uzr, to'lovingiz admin tomonidan rad etildi. Ma'lumotlarni qayta tekshiring.`);
+        bot.sendMessage(targetId, `❌ Uzr, to'lovingiz rad etildi.`);
         bot.editMessageText(adminMsg.text + "\n\n❌ ADMIN TOMONIDAN RAD ETILDI", { chat_id: ADMIN_ID, message_id: adminMsg.message_id });
     }
-    
     bot.answerCallbackQuery(query.id);
 });
