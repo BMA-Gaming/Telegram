@@ -10,7 +10,9 @@ app.use(express.json());
 const PORT = process.env.PORT || 3000;
 
 const token = process.env.TOKEN ? process.env.TOKEN.trim() : null;
-const PAYMENT_TOKEN = process.env.PROVIDER_TOKEN ? process.env.PROVIDER_TOKEN.trim() : null;
+// index.js faylingda tokenlar shunday olinishi kerak:
+const token = process.env.TOKEN;
+const providerToken = process.env.PROVIDER_TOKEN;
 const ADMIN_ID = 6685828485; 
 
 if (!token) console.error("❌ DIQQAT: Asosiy TOKEN topilmadi!");
